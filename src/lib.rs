@@ -25,6 +25,7 @@ enum Color {
     Black
 }
 
+#[derive(Clone)]
 pub struct Game {
     /* state, chessboard, turn, potential en passant square, the halfmove clock, and fullmove clock 
     chessboard is represented as a 2d vector of structs Piece. ep_square is a vector of length 2, which represent the coordinates of the en passant square.
@@ -85,7 +86,6 @@ impl Game {
 
         // placement data
         for (row_index, row) in placement_data.split("/").enumerate() {
-            println!("row: {}", row);
             let mut column_index: usize = 0;
             for char in row.chars() {
                 if char.is_digit(10) {
@@ -160,9 +160,14 @@ impl Game {
         return None;
     }
 
+    // make_move calls make_move_internal so we can have an option parameter
+    pub fn make_move(&mut self, _from: &str, _to: &str) -> Option<GameState> {
+        return self.make_move_internal(_from, _to, false);
+    }
+
     /// If the current game state is "InProgress" or "Check" and the move is legal, mutate the 
     /// chessboard to match the new position and return the new game state. 
-    pub fn make_move(&mut self, _from: &str, _to: &str) -> Option<GameState> {
+    fn make_move_internal(&mut self, _from: &str, _to: &str, skip_move_check: bool) -> Option<GameState> {
         // Check that state is allowed
         if self.state == GameState::Checkmate || self.state == GameState::Stalemate {return None;}
         // Check if piece is on square, if not return None
@@ -171,9 +176,10 @@ impl Game {
         let from_pos = vec![56-_from.chars().nth(1).unwrap() as i8, _from.chars().nth(0).unwrap() as i8 - 97];
         let to_pos = vec![56-_to.chars().nth(1).unwrap() as i8, _to.chars().nth(0).unwrap() as i8 - 97];
         // Clone piece, check if it's the right color, and if the move is legal
+        
         let piece = self.chessboard[from_pos[0] as usize][from_pos[1] as usize].clone().unwrap();
-        if piece.color != self.turn {return None;}
-        if !piece.available_moves(self, from_pos.clone(), false, false).unwrap().contains(&to_pos) {return None;}
+        if !skip_move_check && piece.color != self.turn {return None;}
+        if !skip_move_check && !piece.available_moves(self, from_pos.clone(), false, false).unwrap().contains(&to_pos) {return None;}
         
         // check for promotion
         if self.chessboard[from_pos[0] as usize][from_pos[1] as usize].as_ref().unwrap().role == PieceRole::Pawn && (to_pos[0] == 0 || to_pos[0] == 7) {
@@ -223,8 +229,10 @@ impl Game {
             }
 
         }
-        // change state depending on check
 
+        if skip_move_check {return None;}
+        
+        // change state depending on check
         if Game::in_check(&self, if self.turn == Color::White {Color::Black} else {Color::White}) {
             self.state = GameState::Check;
         } else {
@@ -420,7 +428,7 @@ impl Game {
 
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Copy, Debug)]
 struct Piece {
     role: PieceRole,
     color: Color,
@@ -437,6 +445,7 @@ impl Piece {
         }
     }
     fn available_moves(&self, game:&Game, pos: Vec<i8>, only_attack_moves: bool, ignore_check: bool) -> Option<Vec<Vec<i8>>> {
+        //println!("huh");
         fn move_okay(move_vec: Vec<i8>) -> bool {return move_vec[0] >= 0 && move_vec[0] <= 7 && move_vec[1] >= 0 && move_vec[1] <= 7;}
         let board = &game.chessboard;
         let mut moves: Vec<Vec<i8>> = Vec::new();
@@ -569,17 +578,21 @@ impl Piece {
                 }
             }
         }
+        
 
         // remove squares with own color (is_none() prevents error when accessing None)
         moves.retain(|x| board[x[0] as usize][x[1] as usize].is_none() || board[x[0] as usize][x[1] as usize].as_ref().unwrap().color != self.color);
+        //println!("DOS {:?} {:?}",self, moves);
         // remove squares that would put king in check
-        if ignore_check {return Some(moves);}
+        if ignore_check {return Some(moves)}
         let moves_copy = moves.clone();
         for move_vec in moves_copy {
-            let mut board_copy = board.clone();
-            board_copy[move_vec[0] as usize][move_vec[1] as usize] = Some(Piece::new(self.role, self.color, true));
-            board_copy[pos[0] as usize][pos[1] as usize] = None;
-            if Game::in_check(&Game{state: GameState::InProgress, chessboard: board_copy, turn: self.color, ep_square: None, halfmove:0, fullmove:1}, self.color) {
+            let mut board_copy = game.clone();
+            board_copy.make_move_internal(&format!("{}{}", (97+pos[1]) as u8 as char, (56-pos[0]) as u8 as char), &format!("{}{}", (97+move_vec[1]) as u8 as char, (56-move_vec[0]) as u8 as char), true);
+            println!("{:?}", board_copy);
+            //board_copy[move_vec[0] as usize][move_vec[1] as usize] = Some(Piece::new(self.role, self.color, true));
+            //board_copy[pos[0] as usize][pos[1] as usize] = None;
+            if Game::in_check(&board_copy, self.color) {
                 moves.remove(moves.iter().position(|x| *x == move_vec).unwrap());
             }
         }
