@@ -10,7 +10,7 @@ pub enum GameState {
 }
 
 #[derive(Clone, Copy, Debug,PartialEq)]
-enum PieceRole {
+pub enum PieceRole {
     Pawn,
     Rook,
     Knight,
@@ -20,7 +20,7 @@ enum PieceRole {
 }
 
 #[derive(Clone, PartialEq, Debug, Copy)]
-enum Color {
+pub enum Color {
     White,
     Black
 }
@@ -235,7 +235,7 @@ impl Game {
         // change state depending on check
         if Game::in_check(&self, if self.turn == Color::White {Color::Black} else {Color::White}) {
             self.state = GameState::Check;
-        } else {
+        } else {    
             self.state = GameState::InProgress;
         }
 
@@ -429,7 +429,7 @@ impl Game {
 }
 
 #[derive(Clone, Copy, Debug)]
-struct Piece {
+pub struct Piece {
     role: PieceRole,
     color: Color,
     has_moved: bool,
