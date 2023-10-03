@@ -9,7 +9,7 @@ pub enum GameState {
     Stalemate
 }
 
-#[derive(Clone, Copy, Debug,PartialEq, Eq)]
+#[derive(Clone, Copy, Debug,PartialEq, Eq, Hash)]
 pub enum PieceRole {
     Pawn,
     Rook,
@@ -19,7 +19,7 @@ pub enum PieceRole {
     King
 }
 
-#[derive(Clone, PartialEq, Debug, Copy, Eq)]
+#[derive(Clone, PartialEq, Debug, Copy, Eq, Hash)]
 pub enum Color {
     White,
     Black
