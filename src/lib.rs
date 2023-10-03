@@ -32,8 +32,8 @@ pub struct Game {
     The coordinates are the row and column indexes of the square, i.e the bottom right square is [7,7].
     */
     state: GameState,
-    chessboard: Vec<Vec<Option<Piece>>>,
-    turn: Color,
+    pub chessboard: Vec<Vec<Option<Piece>>>,
+    pub turn: Color,
     ep_square: Option<Vec<i8>>,
     halfmove: u64,
     fullmove: u64,
@@ -430,8 +430,8 @@ impl Game {
 
 #[derive(Clone, Copy, Debug)]
 pub struct Piece {
-    role: PieceRole,
-    color: Color,
+    pub role: PieceRole,
+    pub color: Color,
     has_moved: bool,
 }
 
